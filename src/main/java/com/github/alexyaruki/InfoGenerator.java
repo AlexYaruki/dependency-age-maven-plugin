@@ -2,18 +2,11 @@ package com.github.alexyaruki;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.apache.maven.execution.MavenSession;
 import org.apache.maven.model.Dependency;
-import org.apache.maven.plugin.AbstractMojo;
-import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Mojo;
-import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 
 import java.io.ByteArrayOutputStream;
@@ -21,30 +14,9 @@ import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 
+class InfoGenerator {
 
-@Mojo(name = "show")
-public class ProjectDependencyAgePlugin extends AbstractMojo {
-
-    @Parameter(defaultValue = "${project}", readonly = true, required = true)
-    private MavenProject project;
-
-    @Parameter(defaultValue = "${session}", readonly = true, required = true)
-    private MavenSession session;
-
-    @Parameter(property = "pda.ignoreString")
-    private String ignoreString;
-
-    @Override
-    public void execute() throws MojoExecutionException, MojoFailureException {
-        Map<String, String> pdaInfo = generateInfoMap();
-        pdaInfo.keySet().stream().mapToInt(String::length).max().ifPresent((maxInfoLength) -> {
-            for (Map.Entry<String, String> entry : pdaInfo.entrySet()) {
-                System.out.println(StringUtils.rightPad(entry.getKey(), maxInfoLength) + " -> " + entry.getValue());
-            }
-        });
-    }
-
-    private Map<String, String> generateInfoMap() {
+    static Map<String, String> generateInfoMap(MavenProject project, String ignoreString) {
         Map<String, String> pdaInfo = new HashMap<>();
         for (Dependency dependency : project.getDependencies()) {
             String group = dependency.getGroupId();
@@ -62,7 +34,7 @@ public class ProjectDependencyAgePlugin extends AbstractMojo {
         return pdaInfo;
     }
 
-    private String generateInfo(Dependency dependency) {
+    private static String generateInfo(Dependency dependency) {
         String group = dependency.getGroupId();
         String artifact = dependency.getArtifactId();
         String version = dependency.getVersion();
@@ -91,7 +63,7 @@ public class ProjectDependencyAgePlugin extends AbstractMojo {
         }
     }
 
-    private long downloadTimestamp(String group, String artifact, String version) {
+    private static long downloadTimestamp(String group, String artifact, String version) {
         try {
             try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
                 HttpGet request = new HttpGet("http://search.maven.org/solrsearch/select?q=g%3A%22" + group + "%22+AND+a%3A%22" + artifact + "%22&core=gav&rows=1000&wt=json");
