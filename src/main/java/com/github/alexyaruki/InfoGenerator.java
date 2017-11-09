@@ -11,6 +11,8 @@ import org.apache.maven.project.MavenProject;
 
 import java.io.ByteArrayOutputStream;
 import java.time.Instant;
+import java.util.AbstractMap;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,49 +20,32 @@ class InfoGenerator {
 
     static Map<String, String> generateInfoMap(MavenProject project, String ignoreString) {
         Map<String, String> pdaInfo = new HashMap<>();
-        for (Dependency dependency : project.getDependencies()) {
-            String group = dependency.getGroupId();
-            String artifact = dependency.getArtifactId();
-            String version = dependency.getVersion();
-            String name = group + ":" + artifact + ":" + version;
-            if (ignoreString != null && ignoreString.length() != 0) {
-                if (group.contains(ignoreString) || artifact.contains(ignoreString)) {
-                    continue;
-                }
-            }
-            String info = generateInfo(dependency);
-            pdaInfo.put(name, info);
-        }
+        project.getDependencies()
+               .stream()
+               .filter((dependency -> {
+                   if (ignoreString != null && ignoreString.length() != 0) {
+                       if (dependency.getGroupId().contains(ignoreString) || dependency.getArtifactId().contains(ignoreString)) {
+                           return false;
+                       }
+                       return true;
+                   }
+                   return true;
+               }))
+               .map((dependency -> dependency.getGroupId() + ":" + dependency.getArtifactId() + ":" + dependency.getVersion()))
+               .map((name) -> {
+                   String[] nameParts = name.split(":");
+                   Map.Entry<String,Long> entry = entry(name, downloadTimestamp(nameParts[0], nameParts[1], nameParts[2]));
+                   return entry;
+               })
+               .sorted(Comparator.comparingLong(Map.Entry::getValue))
+               .map((e) -> entry(e.getKey(),generateInfo(e.getValue()))).forEach((e) -> {
+                   pdaInfo.entrySet().add(e);
+               });
         return pdaInfo;
     }
 
-    private static String generateInfo(Dependency dependency) {
-        String group = dependency.getGroupId();
-        String artifact = dependency.getArtifactId();
-        String version = dependency.getVersion();
-        long timestamp = downloadTimestamp(group, artifact, version);
-        if (timestamp == -1) {
-            return "Maven Central HTTP Error - Try again ?";
-        } else {
-            timestamp = Instant.now().toEpochMilli() - timestamp;
-            timestamp /= 1000;
-            long seconds = timestamp % 60;
-            timestamp /= 60;
-            long minutes = timestamp % 60;
-            timestamp /= 60;
-            long hours = timestamp % 24;
-            timestamp /= 24;
-            long days = timestamp % 365;
-            timestamp /= 365;
-            long years = timestamp;
-            StringBuilder infoBuilder = new StringBuilder();
-            infoBuilder.append(years).append(years == 1 ? " year, " : " years, ")
-                    .append(days).append(days == 1 ? " day, " : " days, ")
-                    .append(hours).append(hours == 1 ? " hour, " : " hours, ")
-                    .append(minutes).append(minutes == 1 ? " minute, " : " minutes, ")
-                    .append(seconds).append(seconds == 1 ? " second" : " seconds");
-            return infoBuilder.toString();
-        }
+    private static <K,V> Map.Entry<K,V> entry(K key, V value) {
+        return new AbstractMap.SimpleEntry<>(key, value);
     }
 
     private static long downloadTimestamp(String group, String artifact, String version) {
@@ -92,4 +77,32 @@ class InfoGenerator {
             return -1;
         }
     }
+
+    private static String generateInfo(long timestamp) {
+        long temp = timestamp;
+        if (temp == -1) {
+            return "Maven Central HTTP Error - Try again ?";
+        } else {
+            temp = Instant.now().toEpochMilli() - temp;
+            temp /= 1000;
+            long seconds = temp % 60;
+            temp /= 60;
+            long minutes = temp % 60;
+            temp /= 60;
+            long hours = temp % 24;
+            temp /= 24;
+            long days = temp % 365;
+            temp /= 365;
+            long years = temp;
+            StringBuilder infoBuilder = new StringBuilder();
+            infoBuilder.append(years).append(years == 1 ? " year, " : " years, ")
+                    .append(days).append(days == 1 ? " day, " : " days, ")
+                    .append(hours).append(hours == 1 ? " hour, " : " hours, ")
+                    .append(minutes).append(minutes == 1 ? " minute, " : " minutes, ")
+                    .append(seconds).append(seconds == 1 ? " second" : " seconds");
+            return infoBuilder.toString();
+        }
+    }
+
+
 }

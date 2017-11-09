@@ -1,0 +1,7 @@
+* Sort dependency info from oldest to youngest
+* Ignore regular expressions
+* Divert lookup of particular groupId to different repository than Maven Central
+ * Use repositories defined in POM.xml
+* Generate HTML report
+* Build failure on time distance ( example: fail if any dependency is more than 2 years old )
+* Build failure on "semver" distance ( example: fail if used dependency older than 1 major version - "1.0.0" )
