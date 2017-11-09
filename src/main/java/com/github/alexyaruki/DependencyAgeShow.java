@@ -11,18 +11,8 @@ import org.apache.maven.project.MavenProject;
 
 import java.util.Map;
 
-
 @Mojo(name = "show")
-class DependencyAgeShow extends AbstractMojo {
-
-    @Parameter(defaultValue = "${project}", readonly = true, required = true)
-    private MavenProject project;
-
-    @Parameter(defaultValue = "${session}", readonly = true, required = true)
-    private MavenSession session;
-
-    @Parameter(property = "pda.ignoreString")
-    private String ignoreString;
+class DependencyAgeShow extends BaseMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
@@ -33,6 +23,5 @@ class DependencyAgeShow extends AbstractMojo {
             }
         });
     }
-
 
 }

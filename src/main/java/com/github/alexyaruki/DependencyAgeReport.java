@@ -19,16 +19,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.Map;
 
 @Mojo(name = "report")
-public class DependencyAgeReport extends AbstractMojo {
-
-    @Parameter(defaultValue = "${project}", readonly = true, required = true)
-    private MavenProject project;
-
-    @Parameter(defaultValue = "${session}", readonly = true, required = true)
-    private MavenSession session;
-
-    @Parameter(property = "pda.ignoreString")
-    private String ignoreString;
+public class DependencyAgeReport extends BaseMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
