@@ -16,5 +16,10 @@ public abstract class BaseMojo extends AbstractMojo {
     @Parameter(property = "pda.ignoreString")
     protected String ignoreString;
 
+    @Parameter(property = "pda.reportType")
+    protected String reportTypeString;
+
+
+
 
 }
