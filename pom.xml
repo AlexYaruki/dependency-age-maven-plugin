@@ -6,7 +6,7 @@
 
     <groupId>com.github.alexyaruki</groupId>
     <artifactId>dependency-age-maven-plugin</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>0.1-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
     <build>
         <plugins>
@@ -22,7 +22,7 @@
             <plugin>
                 <groupId>com.github.alexyaruki</groupId>
                 <artifactId>dependency-age-maven-plugin</artifactId>
-                <version>1.0-SNAPSHOT</version>
+                <version>0.1-SNAPSHOT</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -51,7 +51,6 @@
                         <ruleset>/rulesets/java/design.xml</ruleset>
                         <ruleset>/rulesets/java/empty.xml</ruleset>
                         <ruleset>/rulesets/java/finalizers.xml</ruleset>
-                        <ruleset>/rulesets/java/imports.xml</ruleset>
                         <ruleset>/rulesets/java/javabeans.xml</ruleset>
                         <ruleset>/rulesets/java/junit.xml</ruleset>
                         <ruleset>/rulesets/java/logging-java.xml</ruleset>
@@ -63,6 +62,7 @@
                         <ruleset>/rulesets/java/typeresolution.xml</ruleset>
                         <ruleset>/rulesets/java/unnecessary.xml</ruleset>
                         <ruleset>/rulesets/java/unusedcode.xml</ruleset>
+                        <ruleset>${project.basedir}/pmd/no_wildcard_imports.xml</ruleset>
                     </rulesets>
                 </configuration>
                 <executions>
@@ -94,12 +94,27 @@
                 <artifactId>maven-checkstyle-plugin</artifactId>
                 <version>2.17</version>
                 <configuration>
-
+                    <configLocation>checkstyle/checkstyle.xml</configLocation>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>CheckStyle-Java</id>
+                        <phase>process-sources</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>CheckStyle-Java-Tests</id>
+                        <phase>process-test-sources</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
-
     <dependencies>
         <dependency>
             <groupId>org.apache.maven.plugin-tools</groupId>

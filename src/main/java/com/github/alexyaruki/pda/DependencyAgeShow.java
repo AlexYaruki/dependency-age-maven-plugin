@@ -1,4 +1,4 @@
-package com.github.alexyaruki;
+package com.github.alexyaruki.pda;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -7,6 +7,11 @@ import org.apache.maven.plugins.annotations.Mojo;
 
 import java.util.Map;
 
+/**
+ * Plugin mojo - Dependency Age Report presentation.
+ * <p>
+ * Presents report to Maven logger
+ */
 @Mojo(name = "show")
 class DependencyAgeShow extends AbstractPDAMojo {
 

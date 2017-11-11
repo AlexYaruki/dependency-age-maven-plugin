@@ -1,7 +1,8 @@
-package com.github.alexyaruki;
+package com.github.alexyaruki.pda;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -20,62 +21,86 @@ import java.util.Map;
 
 
 /**
- * Class for generating dependency age information per dependency specified in pom.xml
+ * Class for generating dependency age information per dependency specified in pom.xml.
  */
 final class InfoGenerator {
 
+    /**
+     * Hidden default constructor.
+     */
     private InfoGenerator() {
     }
 
     /**
      * Generates map of dependency name (groupId:artifactId:version) to textual
-     * description of its age
+     * description of its age.
      *
      * @param project      - current Maven project
-     * @param log
-     *@param ignoreString - which string to ignore in dependency groupId or artifactId  @return
+     * @param log          - current logger
+     * @param ignoreString - which string to ignore in dependency groupId or artifactId
+     * @return map of infos (name -> textual description of its age)
      */
-    static Map<String, String> generateInfoMap(final MavenProject project,final Log log, final String ignoreString) {
+    static Map<String, String> generateInfoMap(final MavenProject project, final Log log, final String ignoreString) {
         final Map<String, String> pdaInfo = new HashMap<>();
         project.getDependencies()
-                .stream()
-                .filter(dependency -> {
-                    if (ignoreString != null && ignoreString.length() != 0) {
-                        if (dependency.getGroupId().contains(ignoreString) || dependency.getArtifactId().contains(ignoreString)) {
-                            return false;
-                        }
-                        return true;
+            .stream()
+            .filter(dependency -> {
+                if (ignoreString != null && ignoreString.length() != 0) {
+                    if (dependency.getGroupId().contains(ignoreString) || dependency.getArtifactId().contains(ignoreString)) {
+                        return false;
                     }
                     return true;
-                })
-                .map(dependency -> dependency.getGroupId() + ":" + dependency.getArtifactId() + ":" + dependency.getVersion())
-                .map(name -> {
-                    final String[] nameParts = name.split(":");
-                    final long timestamp = downloadTimestamp(log,nameParts[0], nameParts[1], nameParts[2]);
-                    if(log.isDebugEnabled()) {
-                        log.debug(name + " -> " + timestamp + " ms");
-                    }
-                    return createEntry(name, timestamp);
-                })
-                .sorted(Comparator.comparingLong(Map.Entry::getValue))
-                .map(entry -> createEntry(entry.getKey(), generateInfo(entry.getValue())))
-                .forEach((entry) -> pdaInfo.put(entry.getKey(), entry.getValue()));
+                }
+                return true;
+            })
+            .map(dependency -> dependency.getGroupId() + ":" + dependency.getArtifactId() + ":" + dependency.getVersion())
+            .map(name -> {
+                final String[] nameParts = name.split(":");
+                final long timestamp = downloadTimestamp(log, nameParts[0], nameParts[1], nameParts[2]);
+                if (log.isDebugEnabled()) {
+                    log.debug(name + " -> " + timestamp + " ms");
+                }
+                return createEntry(name, timestamp);
+            })
+            .sorted(Comparator.comparingLong(Map.Entry::getValue))
+            .map(entry -> createEntry(entry.getKey(), generateInfo(entry.getValue())))
+            .forEach((entry) -> pdaInfo.put(entry.getKey(), entry.getValue()));
         return pdaInfo;
     }
+
+    /**
+     * Utility method for creating Map.Entry objects.
+     *
+     * @param <K>   type of key
+     * @param key   key of entry
+     * @param <V>   type of value
+     * @param value value of entry
+     * @return Map.Entry object of key to value
+     */
 
     private static <K, V> Map.Entry<K, V> createEntry(final K key, final V value) {
         return new AbstractMap.SimpleEntry<>(key, value);
     }
 
+
+    /**
+     * Downloads timestamp of dependency.
+     *
+     * @param log      Maven logger instance
+     * @param group    groupId of dependency
+     * @param artifact artifactId of dependency
+     * @param version  version of dependency
+     * @return timestamp of dependency
+     */
     private static long downloadTimestamp(final Log log, final String group, final String artifact, final String version) {
-        try (final CloseableHttpClient httpClient = HttpClients.createDefault()) {
+        try (CloseableHttpClient httpClient = HttpClients.createDefault()) {
             final HttpGet request = new HttpGet("http://search.maven.org/solrsearch/select?q=g%3A%22" + group + "%22+AND+a%3A%22" + artifact + "%22&core=gav&rows=1000&wt=json");
-            if(log.isDebugEnabled()) {
+            if (log.isDebugEnabled()) {
                 log.debug("GET - > " + request.getURI().toString());
             }
             final ByteArrayOutputStream jsonStream = new ByteArrayOutputStream();
-            try (final CloseableHttpResponse response = httpClient.execute(request)) {
-                if (response.getStatusLine().getStatusCode() == 200) {
+            try (CloseableHttpResponse response = httpClient.execute(request)) {
+                if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
                     response.getEntity().writeTo(jsonStream);
                 } else {
                     return -1;
@@ -88,11 +113,11 @@ final class InfoGenerator {
             for (final JsonNode doc : docs) {
 
                 if (doc.get("v").asText().equals(version)) {
-                    if(log.isDebugEnabled()) {
+                    if (log.isDebugEnabled()) {
                         log.debug("timestamp(RAW) - > " + doc.get("timestamp"));
                     }
                     timestamp = Long.parseLong(doc.get("timestamp").asText());
-                    if(log.isDebugEnabled()) {
+                    if (log.isDebugEnabled()) {
                         log.debug("timestamp(Parsed) - > " + timestamp);
                     }
                     break;
@@ -105,15 +130,27 @@ final class InfoGenerator {
         }
     }
 
+    /**
+     * Generate dependency age info from it's timestamp.
+     *
+     * @param timestamp - timestamp of dependency
+     * @return dependency age info
+     */
     private static String generateInfo(final long timestamp) {
         if (timestamp == -1) {
             return "Maven Central HTTP Error - Try again ?";
         }
 
-        return generateInfoString(timestamp);
+        return generatesIngChecked(timestamp);
     }
 
-    private static String generateInfoString(final long timestamp) {
+    /**
+     * Generates dependency age info from it's checked timestamp.
+     *
+     * @param timestamp - timestamp of dependency
+     * @return dependency age info
+     */
+    private static String generatesIngChecked(final long timestamp) {
         final long timeDifference = Instant.now().toEpochMilli() - timestamp;
         final DurationSplitter durationSplitter = new DurationSplitter(timeDifference);
         final StringBuilder infoStringBuilder = new StringBuilder(50);

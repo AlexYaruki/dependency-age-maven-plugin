@@ -1,4 +1,4 @@
-package com.github.alexyaruki;
+package com.github.alexyaruki.pda;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -25,24 +25,29 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 
-import static j2html.TagCreator.*;
+import static j2html.TagCreator.body;
+import static j2html.TagCreator.html;
+import static j2html.TagCreator.table;
+import static j2html.TagCreator.td;
+import static j2html.TagCreator.th;
+import static j2html.TagCreator.tr;
 
 /**
- * Plugin mojo - Dependency Age Report generation
+ * Plugin mojo - Dependency Age Report generation.
  * <p>
  * Generates report in selected format
  */
 @Mojo(name = "report")
-public class DependencyAgeReport extends AbstractPDAMojo {
+class DependencyAgeReport extends AbstractPDAMojo {
 
     /**
-     * Parameter for selecting report type
+     * Parameter for selecting report type.
      */
     @Parameter(property = "pda.reportType")
-    protected String reportTypeString;//NOPMD
+    private String reportTypeString; //NOPMD
 
     /**
-     * Executes report generation based on parsed report type
+     * Executes report generation based on parsed report type.
      *
      * @throws MojoExecutionException
      * @throws MojoFailureException
@@ -50,44 +55,49 @@ public class DependencyAgeReport extends AbstractPDAMojo {
 
     @Override
     public void execute() throws MojoExecutionException, MojoFailureException {
-        if(!getReportDestinationPath().toFile().exists()) {
+        if (!getReportDestinationPath().toFile().exists()) {
             try {
                 Files.createDirectories(getReportDestinationPath());
             } catch (IOException e) {
-                throw new MojoExecutionException("Cannot create directory \"dependency-age\" in target build directory",e);
+                throw new MojoExecutionException("Cannot create directory \"dependency-age\" in target build directory", e);
             }
         }
-        final Map<String, String> pdaInfo = InfoGenerator.generateInfoMap(project,getLog(), ignoreString);
+        final Map<String, String> pdaInfo = InfoGenerator.generateInfoMap(project, getLog(), ignoreString);
         if (Objects.isNull(reportTypeString)) {
             getLog().warn("Report not generated because of missing report type");
         } else {
             ReportType reportType = null;
-            try  {
+            try {
                 reportType = ReportType.valueOf(reportTypeString.toUpperCase(Locale.getDefault()));
             } catch (IllegalArgumentException e) {
                 getLog().warn("Report not generated because of unknown report type: " + reportTypeString);
                 return;
             }
             switch (reportType) {
-                case JSON: {
+                case JSON:
                     generateJSONReport(pdaInfo);
                     break;
-                }
-                case HTML: {
+
+                case HTML:
                     generateHTMLReport(pdaInfo);
                     break;
-                }
-                case EXCEL: {
+
+                case EXCEL:
                     generateExcelReport(pdaInfo);
                     break;
-                }
-                default: {
+
+                default:
                     getLog().warn("Report not generated because of unknown report type: " + reportTypeString);
                     break;
-                }
             }
         }
     }
+
+    /**
+     * Generates report in JSON format.
+     *
+     * @param pdaInfo map describing information about dependencies age
+     */
 
     private void generateJSONReport(final Map<String, String> pdaInfo) {
         final ObjectMapper mapper = new ObjectMapper();
@@ -100,7 +110,6 @@ public class DependencyAgeReport extends AbstractPDAMojo {
             dependencies.add(dependency);
         });
         root.set("dependencies", dependencies);
-
         try {
             final Path reportPath = getReportDestinationPath().resolve("dependency-age-report.json");
             Files.write(reportPath, mapper.writerWithDefaultPrettyPrinter().writeValueAsString(root).getBytes(Charset.defaultCharset()), StandardOpenOption.CREATE);
@@ -110,6 +119,11 @@ public class DependencyAgeReport extends AbstractPDAMojo {
         }
     }
 
+    /**
+     * Generates report in Excel format.
+     *
+     * @param pdaInfo map describing information about dependencies age
+     */
     private void generateExcelReport(final Map<String, String> pdaInfo) {
         final XSSFWorkbook workbook = new XSSFWorkbook();
         final XSSFSheet summarySheet = workbook.createSheet("Dependency Age Summary");
@@ -136,13 +150,13 @@ public class DependencyAgeReport extends AbstractPDAMojo {
         }
     }
 
+    /**
+     * Generates report in HTML format.
+     *
+     * @param pdaInfo map describing information about dependencies age
+     */
     private void generateHTMLReport(final Map<String, String> pdaInfo) {
-        final ContainerTag table =
-            table(
-                tr(
-                    th(project.getName()).attr("colspan","2")
-                )
-            );
+        final ContainerTag table = table(tr(th(project.getName())).attr("colspan", "2"));
         for (final Map.Entry<String, String> entry : pdaInfo.entrySet()) {
             table.with(
                 tr(
@@ -162,7 +176,11 @@ public class DependencyAgeReport extends AbstractPDAMojo {
         }
     }
 
-    private Path getReportDestinationPath(){
-        return Paths.get(project.getBuild().getDirectory(),"dependency-age");
+    /**
+     * Provides path to reports destination directory.
+     * @return path to reports destination directory
+     */
+    private Path getReportDestinationPath() {
+        return Paths.get(project.getBuild().getDirectory(), "dependency-age");
     }
 }
