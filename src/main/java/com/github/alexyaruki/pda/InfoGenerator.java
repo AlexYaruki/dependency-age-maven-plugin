@@ -168,7 +168,7 @@ final class InfoGenerator {
      * @param timestamp - timestamp of dependency
      * @return dependency age info
      */
-    private static String generateInfo(final long timestamp) {
+    static String generateInfo(final long timestamp) {
         if (timestamp == -1) {
             return "Maven Central HTTP Error - Try again ?";
         }

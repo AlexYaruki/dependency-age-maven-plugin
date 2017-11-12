@@ -1,6 +1,6 @@
 * Ignore regular expressions
 * Divert lookup of particular groupId to different repository than Maven Central
  * Use repository id's defined in POM.xml
-* Build failure on time distance ( example: fail if any dependency is more than 2 years old )
+* How many retries for accessing Maven Central REST API
 * Build failure on "semver" distance ( example: fail if used dependency older than 1 major version - "1.0.0" )
 * Build failure on release distance (example: fail if used dependency is 10 releases behind, based on release count in natural order)
